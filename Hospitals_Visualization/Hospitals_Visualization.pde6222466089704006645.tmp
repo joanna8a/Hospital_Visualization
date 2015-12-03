@@ -1,0 +1,276 @@
+import g4p_controls.*;
+
+/* OpenProcessing Tweak of *@*http://www.openprocessing.org/sketch/61212*@* */
+/* !do not delete the line above, required for linking your tweak if you upload again */
+
+GGroup grpMain, grpWin, grpSelected;
+
+void setup() {
+  size(1580, 650);
+  //size(640,400);
+  usa = loadShape("usa-wikipedia.svg");
+  //usa = loadShape("map.svg");
+  usa.scale(1.6674,1.6745);
+  getStates();
+  
+  //statecolors = loadImage("usa-wikipedia.jpg");
+  //image(statecolors, 10, 75);
+
+  fontA = loadFont("Verdana-15.vlw");
+  
+  //Points
+  statecolors = loadImage("mapMini.png");
+  image(statecolors, 10, 75);
+  
+  locationTable = new Table("locations.tsv");
+  nameTable = new Table("names.tsv");
+  rowCount = locationTable.getRowCount();  
+  
+  dataTable = new Table("random.tsv");
+  interpolators = new Integrator[rowCount];
+  for (int row = 0; row < rowCount; row++) {
+   float initialValue = dataTable.getFloat(row, 1);
+   interpolators[row] = new Integrator(initialValue, 0.9, 0.1);
+  }
+  PFont font = loadFont("Univers-Bold-12.vlw");
+  textFont(font);
+
+  smooth();
+  noStroke(); 
+  
+
+  // Set the font and its size (in units of pixels)
+  textFont(font, 15);
+  generateColors();
+  
+  createGUI();
+  // Create the groups and add controls
+  grpSelected = grpMain = new GGroup(this);
+  grpWin = new GGroup(window);
+  //grpMain.addControls(grp1_a, grp1_b, grp1_c, grp1_d);
+  //grpMain.addControls(grp1_e, grp1_f, grp1_g);
+  //grpWin.addControls(grp2_a, grp2_b, grp2_c, grp2_d, grp2_e);
+
+
+  //smooth();  
+ // noLoop();
+}
+
+void draw() {
+  //scale (0.6674, 0.6745);
+  //shape(usa);
+  //usa.scale(0.80);
+  MmouseX = (int)2*mouseX;
+  MmouseY = (int)2*mouseY;
+  background(255);
+  textSize(30); 
+  text("USA Hospitals Evaluation", 500, 50);
+
+
+  //fill(0);
+  //text("x: "+MmouseX+" y: "+MmouseY, 50, 50);
+
+   drawStates();
+   //Points
+  
+  for (int row = 0; row < rowCount; row++) {
+    interpolators[row].update();
+  }
+  
+  closestDist = width*height;  // abritrarily high
+  
+  for (int row = 0; row < rowCount; row++) {
+    String abbrev = dataTable.getRowName(row);
+    float x = locationTable.getFloat(abbrev, 1);
+    float y = locationTable.getFloat(abbrev, 2);
+    drawData(x+10, y+75, abbrev);
+  }
+  
+  if (closestDist != width*height) {
+    fill(0);
+    textAlign(CENTER);
+    text(closestText, closestTextX, closestTextY);
+  }
+   
+   
+  // Category Selector
+  // Color Scale
+  
+  fill(0);
+  //textSize(20); 
+  //text("Structural Measures", x, 110);
+  //text("Timely and Effective Care", x, 135); 
+  //text("Readmisions, Complications and Deaths", x, 160);
+  //text("Outpatient Procedures", x, 185);
+  //text("Heathcare Associated Infections",x,210);
+  //text("HCAHPS",x,235);
+  //text("Medicare Volume", x, 260);
+  //text("Medicare Spending", x, 285);
+  //text("Payment",x,310);
+  
+  
+  //text("Obama:", 500, 700);
+  //text("Romney:", 650, 700);
+  
+  //text("Click to Select a Category", x, 14);
+}
+
+//Points
+void drawData(float x, float y, String abbrev) {
+  // Figure out what row this is
+  int row = dataTable.getRowIndex(abbrev);
+  // Get the current value
+  float value = interpolators[row].value;
+  
+  float radius = 0;
+  if (value >= 0) {
+    radius = map(value, 0, dataMax, 1.5, 15);
+    fill(#333366);  // blue
+  } else {
+    radius = map(value, 0, dataMin, 1.5, 15);
+    fill(#ec5166);  // red
+  }
+  ellipseMode(RADIUS);
+  ellipse(x, y, radius, radius);
+
+  float d = dist(x, y, mouseX, mouseY);
+  if ((d < radius + 2) && (d < closestDist)) {
+    closestDist = d;
+    String name = nameTable.getString(abbrev, 1);
+    String val = nfp(interpolators[row].target, 0, 2);
+    closestText = name + " " + val;
+    closestTextX = x;
+    closestTextY = y-radius-4;
+  }
+}
+
+void keyPressed() {
+  if (key == ' ') {
+    updateTable();
+  }
+}
+
+
+void updateTable() {  
+  for (int row = 0; row < rowCount; row++) {
+    float newValue = random(dataMin, dataMax);
+    interpolators[row].target(newValue);
+  }
+}
+//Points functions end
+
+void mousePressed() {
+ 
+ // //Strong Rep
+ // if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 712 && MmouseY < 712+25) {
+ //   strongRepAlpha = 255;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 25;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 25;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 25;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 25;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 25;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // } 
+   
+   
+ // //Weak Rep
+ // else if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 687 && MmouseY < 687+25) {
+ //   strongRepAlpha = 25;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 25;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 25;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 25;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 25;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 255;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // }
+  
+ // //Barley Rep
+ // else if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 662 && MmouseY < 662+25) {
+ //   strongRepAlpha = 25;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 25;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 25;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 25;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 255;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 25;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // }
+  
+ //   //Barley Dem
+ // else if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 637 && MmouseY < 637+25) {
+ //   strongRepAlpha = 25;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 25;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 25;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 255;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 25;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 25;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // }
+  
+ // //Weak Dem
+ // else if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 612 && MmouseY < 612+25) {
+ //   strongRepAlpha = 25;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 25;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 255;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 25;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 25;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 25;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // }
+  
+ //  //Strong Dem
+ // else if (MmouseX > 1095 && MmouseX < 1095+150 && MmouseY > 587 && MmouseY < 587+25) {
+ //   strongRepAlpha = 25;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 255;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 25;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 25;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 25;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 25;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // }
+
+ // //Normal Map
+ //  else {   
+ //   strongRepAlpha = 255;
+ //   strongRep = color(153, 0, 0, strongRepAlpha);
+ //   strongDemAlpha = 255;
+ //   strongDem = color(0, 51, 102, strongDemAlpha);
+ //   weakDemAlpha = 255;
+ //   weakDem = color(60, 150, 240, weakDemAlpha);
+ //   barelyDemAlpha = 255;
+ //   barelyDem = color(149, 203, 255, barelyDemAlpha);
+ //   barelyRepAlpha = 255;
+ //   barelyRep = color(240, 150, 150, barelyRepAlpha);
+ //   weakRepAlpha = 255;
+ //   weakRep = color(235, 42, 42, weakRepAlpha);
+ // } 
+}
